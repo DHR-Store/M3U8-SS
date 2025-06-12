@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Open Graph meta tags -->
+    <meta charset="UTF-8">
+    <meta property="og:title" content="SUZA">
+    <meta property="og:description" content="Simple UI based smoothly Movie entertainment page">
+    <meta property="og:url" content="https://suza.vercel.app/">
+    <meta property="og:image" content="https://suza.vercel.app/suza.png">
+    <meta property="og:type" content="website">
+    <link rel="icon" href="https://suza.vercel.app/suza.png" type="image/png">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>SUZA</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap');
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: black;
+    margin: 0;
+    overflow: hidden;
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.neon-text {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 100px;
+    font-weight: bold;
+    display: flex;
+    color: white; /* Default text color */
+}
+
+.neon-text span {
+    opacity: 0;
+    transform: scale(0.5);
+    animation: neonWrite 0.8s ease-out forwards, flicker 1.5s infinite alternate;
+    display: inline-block;
+    filter: blur(5px);
+}
+
+.neon-text span:nth-child(1) { animation-delay: 0.3s; }
+.neon-text span:nth-child(2) { animation-delay: 0.6s; }
+.neon-text span:nth-child(3) { animation-delay: 0.9s; }
+.neon-text span:nth-child(4) { animation-delay: 1.2s; }
+
+@keyframes neonWrite {
+    0% {
+        opacity: 0;
+        transform: scale(0.5);
+        text-shadow: none;
+        filter: blur(10px);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.1);
+        text-shadow: 0 0 10px #00c3ff, 0 0 30px #6200ff, 0 0 50px #b200ff;
+        filter: blur(2px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+        text-shadow: 0 0 20px #00ffff, 0 0 40px #8a2be2, 0 0 60px #ff00ff;
+        filter: blur(0);
+    }
+}
+
+@keyframes flicker {
+    0% {
+        text-shadow: 0 0 15px #00c3ff, 0 0 30px #6200ff, 0 0 45px #b200ff;
+    }
+    100% {
+        text-shadow: 0 0 20px #00ffff, 0 0 35px #8a2be2, 0 0 50px #ff00ff;
+    }
+}
+</style>
+<body>
+
+    <div class="container">
+        <h1 class="neon-text">
+            <span>M</span>
+            <span>3</span>
+            <span>U</span>
+            <span>8</span>
+        </h1>
+    </div>
+
+    <script>
+        // Function to apply the color to both the text and the neon effect
+        function applyNeonTextColor(color) {
+            const neonText = document.querySelector('.neon-text');
+            const textShadow = `${color} 0 0 10px, ${color} 0 0 30px, ${color} 0 0 50px`;
+            neonText.style.color = color;  // Change the main text color
+            neonText.style.textShadow = textShadow; // Apply the neon glow effect
+        }
+
+        // Listen for changes when the page loads
+        window.addEventListener('load', function () {
+            const savedColor = localStorage.getItem('themeColor');
+            if (savedColor) {
+                applyNeonTextColor(savedColor); // Apply saved color to both the text and neon effect
+            }
+        });
+
+        // For smooth page transition to home.html after 4 seconds
+        document.addEventListener("DOMContentLoaded", () => {
+            setTimeout(() => {
+                document.body.style.transition = "opacity 1s ease-in-out";
+                document.body.style.opacity = "0";
+
+                setTimeout(() => {
+                    window.location.href = "home.html"; // Smooth transition to Entry Page
+                }, 1000);
+            }, 4000);
+        });
+    </script>
+</body>
+</html>
