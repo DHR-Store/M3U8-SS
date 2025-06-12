@@ -1,0 +1,824 @@
+<!<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modern M3U8 Player</title>
+    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
+    <style>
+        /* Basic styling for the page */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: #1a1a2e; /* Darker, modern background */
+            display: flex;
+            justify-content: center;
+            /* Changed to column to stack header and player-container */
+            flex-direction: column;
+            align-items: center; /* Center horizontally */
+            min-height: 100vh;
+            color: #e0e0e0; /* Light text for dark background */
+            /* Add padding-top to account for the fixed header */
+            padding-top: 100px; /* Adjust based on your header's actual height + desired spacing */
+            box-sizing: border-box; /* Include padding in element's total width and height */
+        }
+
+        /* Profile Header Styles */
+        .profile-header {
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Center horizontally */
+            padding: 20px;
+            background-color: #1f1f3a; /* Darker background for the header */
+            border-bottom: 1px solid #40407a;
+            width: 100%; /* Take full width */
+            box-sizing: border-box; /* Include padding in width */
+            position: fixed; /* Fixed position at the top */
+            top: 0;
+            left: 0;
+            z-index: 1000; /* Ensure it's above other content */
+            height: 80px; /* Fixed height for the header */
+        }
+
+        .profile-picture {
+            width: 60px; /* Size of the circle image */
+            height: 60px;
+            border-radius: 50%; /* Makes it a circle */
+            object-fit: cover; /* Ensures the image covers the area without distortion */
+            margin-right: 15px;
+            border: 3px solid #6e8efb; /* Accent border */
+            box-shadow: 0 0 10px rgba(110, 142, 251, 0.5); /* Subtle glow */
+        }
+
+        .profile-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e0e0e0; /* Light text color */
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5); /* Subtle text shadow */
+        }
+
+        .player-container {
+            width: 90%;
+            max-width: 900px; /* Slightly wider for a more immersive feel */
+            background-color: #2c2c54; /* Darker container background */
+            border-radius: 15px; /* More pronounced rounded corners */
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25); /* Softer, deeper shadow */
+            overflow: hidden;
+            border: 1px solid #40407a; /* Subtle border */
+            display: flex; /* Use flexbox for layout */
+            flex-direction: column; /* Stack elements vertically */
+            margin-top: 20px; /* Add some space below the header padding */
+            margin-bottom: 20px; /* Add some space at the bottom */
+        }
+
+        .input-container {
+            padding: 25px;
+            border-bottom: 1px solid #40407a; /* Border matching container */
+            display: flex;
+            gap: 15px; /* Increased gap */
+            background-color: #1f1f3a; /* Slightly different shade for input area */
+            flex-wrap: wrap; /* Allow wrapping on small screens */
+        }
+
+        .input-container input[type="text"] {
+            flex-grow: 1;
+            padding: 15px;
+            border: 1px solid #40407a;
+            border-radius: 8px;
+            font-size: 16px;
+            background-color: #2c2c54; /* Matching input field background */
+            color: #e0e0e0; /* Light text in input */
+            outline: none; /* Remove default outline */
+            min-width: 200px; /* Ensure input is not too small */
+        }
+
+        .input-container input[type="text"]::placeholder {
+            color: #8a8a9e; /* Softer placeholder color */
+        }
+
+        .input-container input[type="text"]:focus {
+            border-color: #7a7ade; /* Highlight on focus */
+            box-shadow: 0 0 8px rgba(122, 122, 222, 0.3); /* Glow effect on focus */
+        }
+
+        .input-container button {
+            padding: 15px 25px;
+            background: linear-gradient(135deg, #6e8efb, #a777e3); /* Modern gradient */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .input-container button:hover {
+            transform: translateY(-2px); /* Subtle hover lift */
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(135deg, #5a78e4, #9060c9); /* Darker gradient on hover */
+        }
+
+        /* Video.js Customization */
+        .video-wrapper {
+            position: relative;
+            height: 0;
+            overflow: hidden;
+            background-color: #000; /* Black background for the video area */
+            padding-bottom: 56.25%; /* Default 16:9 aspect ratio, will be adjusted by JS */
+        }
+
+        #my-video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* --- Modern & Attractive Video.js Skin Overrides --- */
+
+        /* Overall Player Look */
+        .video-js {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Consistent font */
+            border-radius: 0 0 15px 15px; /* Match container bottom radius */
+        }
+
+        /* Big Play Button - Centered */
+        .vjs-big-play-button {
+            background-color: rgba(44, 44, 84, 0.7) !important; /* Darker, semi-transparent */
+            border-color: rgba(122, 122, 222, 0.8) !important; /* Accent color border */
+            border-radius: 50% !important; /* Circular button */
+            width: 3em !important;
+            height: 3em !important;
+            line-height: 3em !important;
+            font-size: 3em !important; /* Larger icon */
+            transition: all 0.3s ease !important;
+        }
+
+        .vjs-big-play-button:hover {
+            background-color: rgba(74, 74, 134, 0.9) !important;
+            transform: scale(1.1);
+        }
+
+        .vjs-icon-play:before, .vjs-big-play-button .vjs-icon-placeholder:before {
+            color: #e0e0e0 !important; /* Light icon color */
+        }
+
+        /* Control Bar */
+        .video-js .vjs-control-bar {
+            background-color: rgba(28, 28, 58, 0.85) !important; /* Dark, slightly transparent control bar */
+            height: 4em !important; /* Taller control bar */
+            padding: 0 15px !important;
+            border-top: 1px solid #40407a;
+        }
+
+        /* Buttons in Control Bar */
+        .video-js .vjs-control {
+            color: #c0c0e0 !important; /* Lighter icon color for controls */
+            width: 4em !important; /* Wider buttons */
+            transition: color 0.3s ease;
+        }
+
+        .video-js .vjs-control:hover {
+            color: #ffffff !important; /* White on hover */
+        }
+
+        /* Progress Bar / Seek Bar */
+        .video-js .vjs-progress-control {
+            height: 100%;
+        }
+        .video-js .vjs-progress-holder {
+            height: 10px !important; /* Thicker progress bar */
+            border-radius: 5px !important;
+            background-color: rgba(64, 64, 122, 0.7) !important; /* Background of the bar */
+            margin: auto 10px !important; /* Center vertically and add horizontal margin */
+        }
+
+        .video-js .vjs-play-progress,
+        .video-js .vjs-load-progress {
+            border-radius: 5px !important;
+        }
+
+        .video-js .vjs-play-progress {
+            background: linear-gradient(135deg, #6e8efb, #a777e3) !important; /* Gradient for played progress */
+        }
+        .video-js .vjs-play-progress:before { /* Progress nub */
+            color: #ffffff !important;
+            font-size: 1.2em !important;
+            top: -0.35em !important; /* Adjust position */
+            background-color: #a777e3;
+            border-radius: 50%;
+            box-shadow: 0 0 5px rgba(167, 119, 227, 0.8);
+        }
+
+        .video-js .vjs-load-progress {
+            background-color: rgba(122, 122, 222, 0.5) !important; /* Loaded part of the bar */
+        }
+
+        /* Volume Control */
+        .video-js .vjs-volume-panel {
+            width: 5em !important; /* Consistent width */
+        }
+        .video-js .vjs-volume-bar {
+            background-color: rgba(64, 64, 122, 0.7) !important;
+            height: 6px !important; /* Thinner volume bar */
+            border-radius: 3px !important;
+            margin-top: 1.7em !important; /* Adjust vertical alignment */
+        }
+        .video-js .vjs-volume-level {
+            background: linear-gradient(to right, #6e8efb, #a777e3) !important;
+            border-radius: 3px !important;
+        }
+        .video-js .vjs-volume-level:before { /* Volume nub */
+            background-color: #a777e3;
+            border-radius: 50%;
+            box-shadow: 0 0 3px rgba(167, 119, 227, 0.8);
+            width: 10px;
+            height: 10px;
+            top: -2px;
+            left: -5px; /* Center the smaller nub */
+        }
+
+        /* Time Display */
+        .video-js .vjs-time-control {
+            font-size: 1em !important;
+            line-height: 4em !important; /* Align with taller control bar */
+            padding: 0 0.5em !important;
+            color: #e0e0e0 !important;
+        }
+
+        /* Quality Selector (if using videojs-contrib-quality-levels or similar) */
+        .vjs-menu-button-popup .vjs-menu .vjs-menu-item:hover {
+            background-color: #40407a !important; /* Hover color for menu items */
+            color: #ffffff !important;
+        }
+        .vjs-menu-button-popup .vjs-menu .vjs-selected {
+            background-color: #5a78e4 !important; /* Selected item color */
+            color: #ffffff !important;
+        }
+
+        /* Error Display */
+        .vjs-error-display .vjs-modal-dialog-content {
+            background-color: rgba(28, 28, 58, 0.9) !important;
+            color: #ff6b6b !important; /* Error text color */
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        /* Poster Image */
+        .vjs-poster {
+            background-size: cover;
+            background-position: center;
+            border-radius: 0; /* Make sure poster doesn't interfere with player radius */
+        }
+
+        /* Channel List Styling */
+        .channel-list-container {
+            padding: 20px;
+            background-color: #1f1f3a;
+            border-top: 1px solid #40407a;
+            max-height: 400px; /* Limit height for scrollability, increased for more channels */
+            overflow-y: auto; /* Enable vertical scrolling */
+        }
+
+        .channel-list-container h3 {
+            margin-top: 0;
+            color: #a777e3;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .channel-list-container input[type="search"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border: 1px solid #40407a;
+            background-color: #2c2c54;
+            color: #e0e0e0;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .channel-list-container input[type="search"]::placeholder {
+            color: #8a8a9e;
+        }
+
+        #channel-select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #40407a;
+            background-color: #2c2c54;
+            color: #e0e0e0;
+            font-size: 16px;
+            appearance: none; /* Remove default dropdown arrow */
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20256%20256%22%3E%3Cpath%20fill%3D%22%23e0e0e0%22%20d%3D%22M128%2C192l-64-64h128z%22%2F%3E%3C%2Fsvg%3E'); /* Custom arrow */
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+            background-size: 16px;
+            cursor: pointer;
+        }
+
+        #channel-select option {
+            background-color: #2c2c54;
+            color: #e0e0e0;
+        }
+
+        #channel-select optgroup {
+            background-color: #3a3a6b; /* Darker background for optgroup labels */
+            color: #a777e3; /* Accent color for optgroup labels */
+            font-weight: bold;
+            font-size: 1.1em;
+            padding: 5px 0;
+        }
+
+        #channel-select option:hover {
+            background-color: #40407a;
+        }
+
+        .share-container {
+            padding: 20px;
+            background-color: #1f1f3a;
+            border-top: 1px solid #40407a;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .share-container label {
+            font-size: 1.1em;
+            color: #a777e3;
+            text-align: center;
+        }
+
+        .share-container input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #40407a;
+            border-radius: 8px;
+            background-color: #2c2c54;
+            color: #e0e0e0;
+            font-size: 14px;
+            outline: none;
+            cursor: text;
+        }
+
+        .share-container button {
+            padding: 10px 15px;
+            background: linear-gradient(135deg, #6e8efb, #a777e3);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .share-container button:hover {
+            transform: translateY(-1px);
+            background: linear-gradient(135deg, #5a78e4, #9060c9);
+        }
+
+        /* Responsive adjustments for smaller screens */
+        @media (max-width: 600px) {
+            .profile-header {
+                height: 70px; /* Slightly smaller header on mobile */
+                padding: 15px;
+            }
+            .profile-picture {
+                width: 50px;
+                height: 50px;
+            }
+            .profile-name {
+                font-size: 20px;
+            }
+            body {
+                padding-top: 90px; /* Adjust padding for smaller header */
+            }
+            .player-container {
+                width: 98%;
+                border-radius: 10px;
+            }
+            .input-container {
+                flex-direction: column; /* Stack input and button */
+                padding: 15px;
+            }
+            .input-container input[type="text"] {
+                font-size: 14px;
+            }
+            .input-container button {
+                font-size: 14px;
+                padding: 12px;
+            }
+            .video-js .vjs-control-bar {
+                height: 3.5em !important;
+                padding: 0 10px !important;
+            }
+            .video-js .vjs-control {
+                width: 3.5em !important;
+            }
+            .video-js .vjs-time-control {
+                font-size: 0.9em !important;
+                line-height: 3.5em !important;
+            }
+            .vjs-big-play-button {
+                font-size: 2.5em !important;
+            }
+            .channel-list-container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="profile-header">
+        <img src="images.jpeg" alt="Profile Picture" class="profile-picture"> <span class="profile-name">𝔊𝔬𝔧𝔬 𝔖𝔞𝔱𝔬𝔯𝔲</span>
+    </div>
+
+    <div class="player-container">
+        <div class="input-container">
+            <input type="text" id="m3u8-url" placeholder="Enter M3U8 URL (e.g., http://live.redtraffic.xyz/teen.m3u8)" value="https://master.nhkworld.jp/nhkworld-tv/playlist/live.m3u8">
+            <button id="load-m3u8">Load Stream</button>
+        </div>
+
+        <div class="channel-list-container">
+            <h3>Load from Custom or Public IPTV List</h3>
+            <input type="search" id="channel-search" placeholder="Search by channel name or country...">
+            <select id="channel-select">
+                <option value="">-- Select a Channel --</option>
+            </select>
+        </div>
+
+        <div class="video-wrapper">
+             <video
+                id="my-video"
+                class="video-js vjs-default-skin vjs-big-play-centered"
+                controls
+                preload="auto"
+                width="100%"
+                height="100%"
+                data-setup='{}'>
+                <p class="vjs-no-js">
+                    To view this video please enable JavaScript, and consider upgrading to a
+                    web browser that
+                    <a href="https://videojs.com/html5-video-support/" target="_blank">supports HTML5 video</a>
+                </p>
+            </video>
+        </div>
+
+        <div class="share-container">
+            <label for="share-link">Share this stream:</label>
+            <input type="text" id="share-link" readonly>
+            <button id="copy-share-link">Copy Share Link</button>
+        </div>
+    </div>
+
+    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const videoPlayer = videojs('my-video', {
+                aspectRatio: '16:9',
+                fluid: true,
+                autoplay: false,
+                controls: true,
+                playbackRates: [0.5, 1, 1.5, 2],
+                controlBar: {
+                    children: [
+                        'playToggle',
+                        'volumePanel',
+                        'currentTimeDisplay',
+                        'timeDivider',
+                        'durationDisplay',
+                        'progressControl',
+                        'liveDisplay',
+                        'seekToLive',
+                        'remainingTimeDisplay',
+                        'playbackRateMenuButton',
+                        'descriptionsButton',
+                        'subtitlesButton',
+                        'captionsButton',
+                        'audioTrackButton',
+                        'fullscreenToggle'
+                    ]
+                },
+                html5: {
+                    hls: {
+                        overrideNative: true,
+                    }
+                },
+                userActions: {
+                    doubleClick: true
+                },
+            });
+
+            const m3u8UrlInput = document.getElementById('m3u8-url');
+            const loadM3u8Button = document.getElementById('load-m3u8');
+            const videoWrapper = document.querySelector('.video-wrapper');
+            const channelSelect = document.getElementById('channel-select');
+            const channelSearchInput = document.getElementById('channel-search'); // New search input
+            const shareLinkInput = document.getElementById('share-link');
+            const copyShareLinkButton = document.getElementById('copy-share-link');
+
+    // --- Custom M3U8 Links (Add your own here!) ---
+            const customChannels = [
+                { name: "Sample Stream 1 (Big Buck Bunny)", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8", category: "Samples" },
+                { name: "Sample Stream 2 (Sintel Trailer)", url: "https://bitmovin-a.akamaihd.net/content/sintel/hls/playlist.m3u8", category: "Samples" },
+                { name: "Example Live Stream (CORS might block)", url: "http://live.redtraffic.xyz/teen.m3u8", category: "Tests" }
+            ];
+
+            // Public IPTV GitHub source for M3U8 list (More comprehensive list)
+            const IPTV_GITHUB_SOURCE = 'https://iptv-org.github.io/iptv/index.m3u';
+            let allPublicChannels = []; // Store all fetched public channels
+
+            let currentStreamUrl = '';
+
+            function loadStream(url, preventAutoplay = false) {
+                if (!url) {
+                    alert('Please enter an M3U8 URL or select a channel.');
+                    return;
+                }
+
+                currentStreamUrl = url;
+                m3u8UrlInput.value = url; // Update the input field with the loaded URL
+                updateShareLink(url); // Update the share link whenever a new stream is loaded
+
+                if (!url.toLowerCase().endsWith('.m3u8') && !url.toLowerCase().includes('.ts')) {
+                    console.warn("The URL doesn't end with .m3u8 or .ts. Attempting to load anyway.");
+                }
+
+                console.log('Loading stream:', url);
+                videoPlayer.src({
+                    src: url,
+                    type: 'application/x-mpegURL'
+                });
+
+                if (!preventAutoplay) {
+                    setTimeout(() => {
+                        videoPlayer.play().catch(error => {
+                            console.error("Error attempting to play video:", error);
+                            if (error.name === 'NotAllowedError') {
+                                console.warn("Autoplay was prevented. User interaction might be required.");
+                            }
+                        });
+                    }, 100);
+                }
+
+                videoPlayer.on('loadedmetadata', function() {
+                    const video = document.getElementById('my-video_html5_api');
+                    if (video && video.videoHeight > 0 && video.videoWidth > 0) {
+                        const aspectRatio = video.videoWidth / video.videoHeight;
+                        videoWrapper.style.paddingBottom = (1 / aspectRatio) * 100 + '%';
+                    } else {
+                        videoWrapper.style.paddingBottom = '56.25%'; // Default 16:9 if metadata not available
+                    }
+                });
+            }
+
+            // Function to update the share link
+            function updateShareLink(url) {
+                const currentOrigin = window.location.origin;
+                const currentPagePath = window.location.pathname.split('/').pop(); // Gets 'index.html' or similar
+                const shareableUrl = `${currentOrigin}/${currentPagePath}?url=${encodeURIComponent(url)}`;
+                shareLinkInput.value = shareableUrl;
+            }
+
+            loadM3u8Button.addEventListener('click', () => {
+                loadStream(m3u8UrlInput.value.trim());
+            });
+
+            channelSelect.addEventListener('change', (event) => {
+                const selectedUrl = event.target.value;
+                if (selectedUrl) {
+                    loadStream(selectedUrl);
+                }
+            });
+
+            copyShareLinkButton.addEventListener('click', () => {
+                shareLinkInput.select();
+                shareLinkInput.setSelectionRange(0, 99999); // For mobile devices
+                document.execCommand('copy');
+                alert('Share link copied to clipboard!');
+            });
+
+            // Function to fetch and parse the comprehensive IPTV list
+            async function fetchAndParseIptvList() {
+                try {
+                    const response = await fetch(IPTV_GITHUB_SOURCE);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const text = await response.text();
+                    const lines = text.split('\n');
+                    const channelsByCategory = {};
+
+                    let currentCategory = 'Unknown';
+                    let currentChannelName = '';
+                    let currentChannelUrl = '';
+
+                    for (let i = 0; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (line.startsWith('#EXTINF:')) {
+                            const tvgNameMatch = /tvg-name="([^"]*)"/.exec(line);
+                            const groupTitleMatch = /group-title="([^"]*)"/.exec(line);
+                            const nameMatch = /,(.*)/.exec(line);
+
+                            currentChannelName = (tvgNameMatch && tvgNameMatch[1]) ? tvgNameMatch[1].trim() : (nameMatch && nameMatch[1] ? nameMatch[1].trim() : 'Unknown Channel');
+                            currentCategory = (groupTitleMatch && groupTitleMatch[1]) ? groupTitleMatch[1].trim() : 'Other Channels';
+
+                        } else if (line.startsWith('http') && (line.includes('.m3u8') || line.includes('.ts'))) {
+                            currentChannelUrl = line.trim();
+                            if (currentChannelName && currentChannelUrl) {
+                                if (!channelsByCategory[currentCategory]) {
+                                    channelsByCategory[currentCategory] = [];
+                                }
+                                channelsByCategory[currentCategory].push({
+                                    name: currentChannelName,
+                                    url: currentChannelUrl,
+                                    category: currentCategory
+                                });
+                            }
+                            // Reset for next channel
+                            currentChannelName = '';
+                            currentChannelUrl = '';
+                        }
+                    }
+
+                    // Convert the object back to a flat array, preserving category for filtering
+                    const flatChannels = [];
+                    for (const category in channelsByCategory) {
+                        flatChannels.push(...channelsByCategory[category]);
+                    }
+                    return { categorized: channelsByCategory, flat: flatChannels };
+
+                } catch (error) {
+                    console.error('Failed to fetch or parse public IPTV list:', error);
+                    return { categorized: {}, flat: [] }; // Return empty objects on error
+                }
+            }
+
+            function populateChannelSelect(categorizedChannels) {
+                // Clear existing options, but keep the default "Select a Channel"
+                channelSelect.innerHTML = '<option value="">-- Select a Channel --</option>';
+
+                // Add Custom Channels first
+                const customOptGroup = document.createElement('optgroup');
+                customOptGroup.label = "My Custom Channels";
+                customChannels.forEach(channel => {
+                    const option = document.createElement('option');
+                    option.value = channel.url;
+                    option.textContent = channel.name;
+                    customOptGroup.appendChild(option);
+                });
+                channelSelect.appendChild(customOptGroup);
+
+                // Add Public IPTV Channels by category
+                const sortedCategories = Object.keys(categorizedChannels).sort();
+                sortedCategories.forEach(category => {
+                    const optGroup = document.createElement('optgroup');
+                    optGroup.label = category;
+                    categorizedChannels[category].sort((a, b) => a.name.localeCompare(b.name)).forEach(channel => {
+                        const option = document.createElement('option');
+                        option.value = channel.url;
+                        option.textContent = channel.name;
+                        optGroup.appendChild(option);
+                    });
+                    channelSelect.appendChild(optGroup);
+                });
+            }
+
+            // Function to filter channels based on search input
+            function filterChannels() {
+                const searchTerm = channelSearchInput.value.toLowerCase();
+                // Clear the current dropdown but keep the initial option
+                channelSelect.innerHTML = '<option value="">-- Select a Channel --</option>';
+
+                // Add Custom Channels (always visible)
+                const customOptGroup = document.createElement('optgroup');
+                customOptGroup.label = "My Custom Channels";
+                customChannels.forEach(channel => {
+                    const option = document.createElement('option');
+                    option.value = channel.url;
+                    option.textContent = channel.name;
+                    customOptGroup.appendChild(option);
+                });
+                channelSelect.appendChild(customOptGroup);
+
+                const filteredPublicChannels = allPublicChannels.filter(channel =>
+                    channel.name.toLowerCase().includes(searchTerm) ||
+                    channel.category.toLowerCase().includes(searchTerm)
+                );
+
+                const filteredCategorized = {};
+                filteredPublicChannels.forEach(channel => {
+                    if (!filteredCategorized[channel.category]) {
+                        filteredCategorized[channel.category] = [];
+                    }
+                    filteredCategorized[channel.category].push(channel);
+                });
+
+                populateChannelSelect(filteredCategorized);
+
+                // If a stream is already loaded from a parameter and it's in the filtered list, keep it selected.
+                // This might be tricky with dynamic filtering, usually, you'd only set the input value.
+                // For simplicity, we won't re-select if filtered, just ensure the input URL remains.
+            }
+
+            // Add event listener for search input
+            channelSearchInput.addEventListener('input', filterChannels);
+
+            // --- Initial Load Logic ---
+            async function initializePlayer() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const streamUrlFromParam = urlParams.get('url');
+
+                const { categorized, flat } = await fetchAndParseIptvList();
+                allPublicChannels = flat; // Store the flat list for searching
+                populateChannelSelect(categorized); // Populate initially with all channels
+
+                if (streamUrlFromParam) {
+                    // Load stream from URL parameter
+                    const decodedUrl = decodeURIComponent(streamUrlFromParam);
+                    m3u8UrlInput.value = decodedUrl;
+                    loadStream(decodedUrl);
+
+                    // Try to pre-select the channel in the dropdown if it exists
+                    const foundChannel = allPublicChannels.find(ch => ch.url === decodedUrl) ||
+                                         customChannels.find(ch => ch.url === decodedUrl);
+                    if (foundChannel) {
+                        channelSelect.value = decodedUrl;
+                    }
+
+                } else if (m3u8UrlInput.value.trim()) {
+                    // Load default stream from input field
+                    loadStream(m3u8UrlInput.value.trim());
+                } else if (customChannels.length > 0) {
+                    // Load the first custom channel if no URL parameter or default input
+                    m3u8UrlInput.value = customChannels[0].url;
+                    loadStream(customChannels[0].url);
+                    channelSelect.value = customChannels[0].url; // Select it in the dropdown
+                }
+            }
+
+            initializePlayer();
+
+
+            videoPlayer.on('error', function() {
+                const error = videoPlayer.error();
+                console.error('Video.js Error:', error);
+                alert(`Video Playback Error: ${error ? error.message : 'Unknown error'}. Please try a different URL.`);
+            });
+
+            videoPlayer.on('waiting', function() {
+                console.log('Player is waiting for data (buffering)...');
+            });
+
+            videoPlayer.on('playing', function() {
+                console.log('Player has started playing or resumed.');
+            });
+
+            videoPlayer.on('ended', function() {
+                console.log('Video has ended.');
+            });
+
+            videoPlayer.on('fullscreenchange', function() {
+                console.log('Fullscreen mode changed. Is fullscreen:', videoPlayer.isFullscreen());
+            });
+
+            videoPlayer.on('keydown', function(event) {
+                if (event.key === 'm' || event.key === 'M') {
+                    videoPlayer.muted(!videoPlayer.muted());
+                }
+                if (event.key === 'f' || event.key === 'F') {
+                    if (videoPlayer.isFullscreen()) {
+                        videoPlayer.exitFullscreen();
+                    } else {
+                        videoPlayer.requestFullscreen();
+                    }
+                }
+                if (event.key === 'ArrowLeft') {
+                    videoPlayer.currentTime(Math.max(0, videoPlayer.currentTime() - 10));
+                }
+                if (event.key === 'ArrowRight') {
+                    videoPlayer.currentTime(Math.min(videoPlayer.duration(), videoPlayer.currentTime() + 10));
+                }
+            });
+
+            if (Hls.isSupported()) {
+                // Video.js uses Hls.js automatically when 'overrideNative: true' is set in html5 options
+                // No direct HLS.js instance manipulation is typically needed here.
+            } else if (videoPlayer.tech({ IWillNotUseThisInPlugins: true }).options_ &&
+                       !videoPlayer.tech({ IWillNotUseThisInPlugins: true }).options_.nativeHls) {
+                console.warn("HLS.js is not supported in this browser, and native HLS might not be either. Playback may fail for M3U8 streams.");
+            }
+        });
+    </script>
+</body>
+</html>
